@@ -13,6 +13,8 @@ import {
 } from './dynamic-plugin-sdk';
 import { Button, PageSection, TextInput } from '@patternfly/react-core';
 
+const namespace = 'aballantyne';
+
 // const ProjectModel: K8sModel = {
 //   apiVersion: 'v1',
 //   apiGroup: 'project.openshift.io',
@@ -43,7 +45,7 @@ enum ActionType {
 // const initResource: WatchK8sResource = {
 //   groupVersionKind: { version: 'v1', kind: 'ConfigMap' },
 //   name: 'test',
-//   namespace: 'aballantyne',
+//   namespace,
 // };
 
 const TestK8s: React.FC = () => {
@@ -60,7 +62,7 @@ const TestK8s: React.FC = () => {
     const testConfigMapMetadata = {
       metadata: {
         name,
-        namespace: 'aballantyne',
+        namespace,
       },
     };
     const testConfigMapData: K8sResourceCommon & { [key: string]: any } = {
