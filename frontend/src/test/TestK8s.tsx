@@ -13,6 +13,7 @@ import {
 } from './dynamic-plugin-sdk';
 import { Button, PageSection, TextInput } from '@patternfly/react-core';
 
+// TODO: this will be a problem? How do we effectively know what namespace we are in?
 const namespace = 'aballantyne';
 
 // const ProjectModel: K8sModel = {
@@ -135,7 +136,7 @@ const TestK8s: React.FC = () => {
 
   return (
     <PageSection>
-      <TextInput onChange={(v) => setName(v)} value={name} />
+      <TextInput placeholder="ConfigMap name" onChange={(v) => setName(v)} value={name} />
       {Object.values(ActionType).map((v) => (
         <React.Fragment key={v}>
           <Button onClick={() => setAction(v)}>{v}</Button>{' '}
