@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useHistory } from 'react-router-dom';
-import { Routes } from './Routes';
+// import { Routes } from './Routes';
 import './App.scss';
 
 import { getRegistry } from '@redhat-cloud-services/frontend-components-utilities/Registry';
@@ -8,6 +8,7 @@ import NotificationsPortal from '@redhat-cloud-services/frontend-components-noti
 import { notificationsReducer } from '@redhat-cloud-services/frontend-components-notifications/redux';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import { useStore } from 'react-redux';
+import TestK8s from './test/TestK8s';
 
 const App: React.FC = () => {
   const history = useHistory();
@@ -33,7 +34,7 @@ const App: React.FC = () => {
   return (
     <React.Fragment>
       <NotificationsPortal store={store} />
-      <Routes />
+      <TestK8s />
     </React.Fragment>
   );
 };
