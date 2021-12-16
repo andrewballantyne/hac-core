@@ -3,13 +3,11 @@ import * as React from 'react';
 import * as _ from 'lodash';
 
 /* throw away fetch methods */
-const token = 'bearer-token-value';
-
-const basePath = '/';
-const k8sBasePath = `${basePath}api/k8s`;
+const k8sBasePath = `/api/k8s`; // webpack proxy path
 
 const commonFetch = async (url, method, options, timeout): Promise<any> => {
   const allOptions = _.defaultsDeep({ method }, options, { headers: { Accept: 'application/json' } });
+  const [,token] = document.cookie.split('; ').find((val) => val.startsWith('cs_jwt=')).split('=');
   allOptions.headers.Authorization = `Bearer ${token}`;
   const response = await (await fetch(url, allOptions)).json();
 
