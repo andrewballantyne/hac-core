@@ -6,12 +6,25 @@ import * as _ from 'lodash';
 const k8sBasePath = `/api/k8s`; // webpack proxy path
 
 const commonFetch = async (url, method, options, timeout): Promise<any> => {
-  const allOptions = _.defaultsDeep({ method }, options, { headers: { Accept: 'application/json' } });
-  const [,token] = document.cookie.split('; ').find((val) => val.startsWith('cs_jwt=')).split('=');
-  allOptions.headers.Authorization = `Bearer ${token}`;
-  const response = await (await fetch(url, allOptions)).json();
+  // Grab the token out of the cookie for ConsoleDot | if not proxying to prod, token will be invalid even if it is there
+  const cookieToken = document.cookie.split('; ').find((val) => val.startsWith('cs_jwt='));
+  if (!cookieToken) {
+    return Promise.reject('Could not make k8s call. Unable to find token.');
+  }
+  const [,token] = cookieToken.split('=');
 
-  return Promise.resolve(response);
+  const allOptions = _.defaultsDeep({ method }, options, { headers: { Accept: 'application/json' } });
+  allOptions.headers.Authorization = `Bearer ${token}`;
+  try {
+    const response = await fetch(url, allOptions);
+    if (response.status === 401) {
+      return Promise.reject('Invalid token. Are you working with Prod SSO token?');
+    }
+    const json = await response.json();
+    return Promise.resolve(json);
+  } catch(e) {
+    return Promise.reject(e);
+  }
 };
 
 const consoleFetchSendJSON = (
@@ -387,6 +400,23 @@ const k8sList = (
   });
 };
 
+/**
+ * This makes an assumption that the model will have a plural of `${kind}s` -- which is obv not ideal.
+ * Without apiDiscovery & the hook interface being sorta fixed, our options are limited.
+ */
+const makeGetCall = (initResource: WatchK8sResource) => (
+  k8sGetResource({
+    model: {
+      apiVersion: initResource.groupVersionKind.version,
+      apiGroup: initResource.groupVersionKind.group,
+      kind: initResource.groupVersionKind.kind,
+      // TODO: no dictionary... solution?
+      plural: initResource.groupVersionKind.kind.toLowerCase() + 's',
+    },
+    name: initResource.name,
+    ns: initResource.namespace,
+  })
+);
 
 /* ------------------ *
  *  External Methods  *
@@ -485,20 +515,10 @@ export const k8sDeleteResource = adapterFunc(k8sKill, [
  * * */
 export const k8sListResource = adapterFunc(k8sList, ['model', 'queryParams', 'raw', 'requestInit']);
 
-const makeGetCall = (initResource) => (
-  k8sGetResource({
-    model: {
-      apiVersion: initResource.groupVersionKind.version,
-      apiGroup: initResource.groupVersionKind.group,
-      kind: initResource.groupVersionKind.kind,
-      // TODO: no dictionary... solution?
-      plural: initResource.groupVersionKind.kind.toLowerCase() + 's',
-    },
-    name: initResource.name,
-    ns: initResource.namespace,
-  })
-);
-
+const POLL_DELAY = 2000; // change this if you want it faster / slower
+/**
+ * Watch a resource -- works on a fixed delay poll today.
+ */
 export const useK8sWatchResource = <R extends K8sResourceCommon | K8sResourceCommon[]>(initResource: WatchK8sResource): WatchK8sResult<R> => {
   const [resource, setResource] = React.useState<R | null>(null);
   const [fetched, setFetched] = React.useState(false);
@@ -524,7 +544,7 @@ export const useK8sWatchResource = <R extends K8sResourceCommon | K8sResourceCom
     addPromiseFollowups(makeGetCall(initResource));
     const intervalId = setInterval(() => {
       addPromiseFollowups(makeGetCall(initResource));
-    }, 2000);
+    }, POLL_DELAY);
     return () => {
       clearInterval(intervalId);
     }
